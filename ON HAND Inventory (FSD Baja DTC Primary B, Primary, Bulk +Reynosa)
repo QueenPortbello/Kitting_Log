@@ -1,0 +1,28 @@
+DECLARE @LastReportingDate BIGINT;
+DECLARE @LastExecutionTime datetime2;
+SELECT @LastReportingDate = MAX(ReportingDate), @LastExecutionTime = MAX(ExecutionTime) FROM InventoryFact;
+SELECT  
+i.sku,
+i.ItemName,
+DATEADD(HH, -7,ift.ExecutionTime) ExectionTime,
+SUM(CASE WHEN ift.locationID = 7 THEN ift.AvailQty ELSE 0 END) AS "Manscaped-DTC_Avail_QTY" ,
+SUM(CASE WHEN ift.locationID = 7 THEN ift.OnHandQty ELSE 0 END) AS "Manscaped-DTC_ONHAND_QTY" ,
+SUM(CASE WHEN ift.locationID = 11 THEN ift.AvailQty ELSE 0 END) AS "Primary_B_Avail_QTY" ,
+SUM(CASE WHEN ift.locationID = 11 THEN ift.OnHandQty ELSE 0 END) AS "Primary_B_DTC_ONHAND_QTY" ,
+SUM(CASE WHEN ift.locationID = 63 THEN ift.AvailQty ELSE 0 END) AS "Primary_I_Avail_QTY" ,
+SUM(CASE WHEN ift.locationID = 63 THEN ift.OnHandQty ELSE 0 END) AS "Primary_I_DTC_ONHAND_QTY" ,
+SUM(CASE WHEN ift.locationID = 4 THEN ift.AvailQty ELSE 0 END) AS "FSD_BULK_Avail_QTY" ,
+SUM(CASE WHEN ift.locationID = 4 THEN ift.OnHandQty ELSE 0 END) AS "FSD_BULK_DTC_ONHAND_QTY" ,
+SUM(CASE WHEN ift.locationID = 69 THEN ift.AvailQty ELSE 0 END) AS "Reynosa_Avail_QTY" ,
+SUM(CASE WHEN ift.locationID = 69 THEN ift.OnHandQty ELSE 0 END) AS "Reynosa_ONHAND_QTY" ,
+SUM(isnull(ift.AvailQty ,0)) AS "Subtotal_Avail_Qty",    
+SUM (isnull(ift.OnHandQty ,0)) AS "Subtotal_ON_HAND_Qty"
+FROM ItemDim i
+LEFT JOIN InventoryFact ift ON i.ItemId = ift.ItemId AND ift.ReportingDate = @LastReportingDate AND ift.ExecutionTime = @LastExecutionTime AND COALESCE(ift.IsStockLedgerReport, 0) = 0 AND ift.locationID IN (7,11,63,4,69) AND ift.SourceSystemId = 2
+WHERE i.IsActive = 1
+GROUP BY i.sku,
+i.ItemName,
+ift.ExecutionTime
+HAVING SUM(isnull(ift.AvailQty ,0))<> 0 OR    
+SUM (isnull(ift.OnHandQty ,0)) <>0
+ORDER BY i.sku;
