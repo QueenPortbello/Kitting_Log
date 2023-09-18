@@ -1,24 +1,30 @@
---ON HAND INVENTORY— 
+
 DECLARE @LastReportingDate BIGINT;
 DECLARE @LastExecutionTime datetime2;
 
 --Latest inventory report stored in Fact table
-SELECT @LastReportingDate = MAX(ReportingDate), @LastExecutionTime = MAX(ExecutionTime) FROM InventoryFact;
+SELECT @LastReportingDate = MAX(ReportingDate) FROM InventoryFact;
+SELECT @LastExecutionTime = MAX(ExecutionTime) FROM InventoryFact WHERE ReportingDate =  @LastReportingDate;
+
+ 
+
+ 
+
 
 --Actual report
-SELECT  i.sku, 
-        i.ItemName, 
+SELECT  i.sku,
+        i.ItemName,
         COALESCE(l.FormattedLocationName, l.LocationName) LocationName,
         l.SourceSystem SourceSystem,
         DATEADD(HH, -7, ift.ExecutionTime) ExecutionTime,
         SUM(ift.AvailQty) AvailQtys,
         SUM(ift.OnHandQty) OnHandQty
 FROM ItemDim i
-INNER JOIN InventoryFact ift ON i.ItemId = ift.ItemId AND ift.ReportingDate = @LastReportingDate AND ift.ExecutionTime = @LastExecutionTime AND COALESCE(ift.IsStockLedgerReport, 0) = 0 
-INNER JOIN LocationDim l ON     ift.LocationId = l.LocationId AND l.SourceSystem in ('NPF') 
-WHERE i.IsActive = 1
-GROUP BY i.sku, 
-        i.ItemName, 
+INNER JOIN InventoryFact ift ON i.ItemId = ift.ItemId AND ift.ReportingDate = @LastReportingDate AND ift.ExecutionTime = @LastExecutionTime AND COALESCE(ift.IsStockLedgerReport, 0) = 0
+INNER JOIN LocationDim l ON     ift.LocationId = l.LocationId AND l.SourceSystem in ('Shiphero')
+WHERE i.IsActive = 1 AND l.locationname ='Texas'
+GROUP BY i.sku,
+        i.ItemName,
         COALESCE(l.FormattedLocationName, l.LocationName),
         l.SourceSystem,
         l.LocationName,
