@@ -1,5 +1,5 @@
-Select FORMAT(s.date_expected_shipping,'yyyy-MM-dd') AS 'ETD',
-FORMAT(s.date_expected_delivery,'yyyy-MM-dd') AS 'ETA',
+Select CAST (s.date_expected_shipping AS DATE) AS 'ETD',
+CAST (s.date_expected_delivery AS Date) AS 'ETA',
 s.INBOUNDSHIPMENT_ID,
 s.[STATUS],
 s.DestinationCountry,
