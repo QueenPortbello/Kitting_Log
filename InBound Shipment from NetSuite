@@ -3,13 +3,13 @@ CAST (s.date_expected_delivery AS Date) AS 'ETA',
 s.INBOUNDSHIPMENT_ID,
 s.[STATUS],
 s.DestinationCountry,
-so.SKU,
-so.ItemName,
+i.SKU,
+i.ItemName,
 sf.QUANTITY_EXPECTED,
 st.LocationName
 From InboundShipmentLegacy s
 INNER JOIN InbounShipmentItem sf on s.INBOUNDSHIPMENT_ID = sf.INBOUNDSHIPMENT_ID
-INNER JOIN ItemDim so on sf.item_id = so.itemid
+INNER JOIN ItemDim i on cast(sf.item_id as varchar) = i.InternalId
 INNER JOIn LocationDim st on CONVERT(NVARCHAR(12),sf.RECEIVING_LOCATION_ID) =  st.LocationExternalId
-WHERE date_expected_shipping>= DATEADD(DAY, -180, GETDATE()) and s.DestinationCountry IN ('US','MX') AND s.[STATUS] <> 'Received' ANd so.SKU <> '' AND so.itemname <> ''
-ORDER BY date_expected_shipping DESC
+WHERE s.date_expected_shipping>= DATEADD(DAY, -180, GETDATE()) and s.DestinationCountry IN ('US','MX') AND s.[STATUS] <> 'Received' --ANd i.SKU <> '' AND i.itemname <> ''
+ORDER BY s.date_expected_shipping DESC
