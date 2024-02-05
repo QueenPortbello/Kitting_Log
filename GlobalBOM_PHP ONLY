@@ -1,0 +1,13 @@
+SELECT s.BOMSKU,
+i.ItemName AS "Kit_Name",
+s.ComponentSKU,
+i2.ItemName As"Component_Item_Name",
+s.Quantity,
+s.RegionCodes,
+DATEADD(HH, -7, s.InsertedDateUtc) As "Report_Updated_Date",
+i.IsActive
+From GlobalBOM s
+INNER JOIN ItemDIM i ON s.BOMSKU= i.SKU 
+INNER JOIN ItemDIM i2 ON s.ComponentSKU = i2.SKU
+WHERE i.Isactive=1 AND s.regioncodes ='CA|US' AND s.BOMSKU LIKE 'P%'
+ORDER BY s.BOMSKU, s.RegionCodes
