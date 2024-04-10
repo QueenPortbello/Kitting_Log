@@ -5,9 +5,11 @@ i2.ItemName As"Component_Item_Name",
 s.Quantity,
 s.RegionCodes,
 DATEADD(HH, -7, s.InsertedDateUtc) As "Report_Updated_Date",
-i.IsActive
+i.IsActive,
+s.productClass,
+s.channel
 From GlobalBOM s
 INNER JOIN ItemDIM i ON s.BOMSKU= i.SKU 
 INNER JOIN ItemDIM i2 ON s.ComponentSKU = i2.SKU
-WHERE i.Isactive=1 
+WHERE i.Isactive=1 AND s.regioncodes ='CA|US' AND s.channel Like 'D%'
 ORDER BY s.BOMSKU, s.RegionCodes
