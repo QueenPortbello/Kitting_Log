@@ -12,14 +12,11 @@ o.transaction_type,
 o.status, 
 o.sku, 
 o.description, 
-o.costing_method, 
-o.receipt_id, 
 o.location_id AS FROM_location, 
-o.received_quantities AS FROM_quantity, 
-o.item_unit_price AS FROM_unit_price, 
 i.location_id AS TO_location, 
-i.received_quantities AS TO_quantity, 
-i.item_unit_price AS TO_unit_price
+i.received_quantities AS TO_quantity,
+i.create_date 
 from    from_l o
 inner   join to_l i on o.transaction_id = i.transaction_id and o.item_id = i.item_id
-order by tranid DESC
+where i.[status] ='Pending Receipt'
+order by i.create_date DESC
