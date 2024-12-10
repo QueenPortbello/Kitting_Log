@@ -1,23 +1,75 @@
-DECLARE @LastReportingDate BIGINT;
-DECLARE @LastExecutionTime datetime2;
+Dselect id.sku                                                  as sku,
+      id.itemname                                              as product_name,
+      case
+      when ld.locationname = 'TORR' then 'Maersk TOR Retail'
+      when ld.locationname = 'TORV' then 'Walmart - CA'
+      else
+      iif(ssd.sourcesystemname = 'NPF','NPF',coalesce(ld.formattedlocationname, ld.locationname))
+      end as location,
+ssd.sourcesystemname,
+ DATEADD(HH, -7, current_timestamp) as Data_Refresh_Time,
+      max(coalesce(ift.availqty, 0))            as avail_quantity,
+      sum(coalesce(ift.onhandqty, ift.availqty, 0))            as on_hand_quantity
+      from vw_InventoryFact_MaxExecutionTime met
 
-SELECT @LastReportingDate = MAX(ReportingDate) FROM InventoryFact;
-SELECT @LastExecutionTime = MAX(ExecutionTime) FROM InventoryFact WHERE ReportingDate =  @LastReportingDate;
+      join  dbo.inventoryfact ift
+      ON ift.ReportingDate = dbo.MaxReportingDate()
+      and met.ExecutionTime = ift.ExecutionTime
+      and ift.isstockledgerreport != 1
+      and ift.isreconciledreport != 1
+      and ift.onhandqty > 0
 
-SELECT  i.sku,
-        i.ItemName,
-        DATEADD(HH, -7,ift.ExecutionTime) ExectionTime,
-        SUM(CASE WHEN ift.locationID = 7 THEN ift.OnHandQty ELSE 0 END) AS "Manscaped-DTC_ONHAND_QTY" ,
-        SUM(CASE WHEN ift.locationID = 11 THEN ift.OnHandQty ELSE 0 END) AS "Primary_B_DTC_ONHAND_QTY" ,
-        SUM(CASE WHEN ift.locationID = 63 THEN ift.OnHandQty ELSE 0 END) AS "Primary_I_DTC_ONHAND_QTY" ,
-        SUM(CASE WHEN ift.locationID = 69 THEN ift.OnHandQty ELSE 0 END) AS "Reynosa_ONHAND_QTY" ,
-        SUM (isnull(ift.OnHandQty ,0)) AS "Baja&Reynosa_ON_HAND_Qty"
-FROM ItemDim i
-LEFT JOIN InventoryFact ift ON i.ItemId = ift.ItemId AND ift.ReportingDate = @LastReportingDate AND ift.ExecutionTime = @LastExecutionTime AND COALESCE(ift.IsStockLedgerReport, 0) = 0 AND ift.locationID IN (7,11,63,4,69) AND ift.SourceSystemId = 2
-WHERE i.IsActive = 1
-GROUP BY i.sku,
-        i.ItemName,
-        ift.ExecutionTime
-HAVING SUM(isnull(ift.AvailQty ,0))<> 0 OR    
-        SUM (isnull(ift.OnHandQty ,0)) <>0
-ORDER BY i.sku;
+      join dbo.sourcesystemdim as ssd
+      on ift.sourcesystemid = ssd.sourcesystemid
+
+      join dbo.datedim as dd
+      on ift.reportingdate = dd.dateid
+
+      join (select *       from dbo.itemdim       where isactive = 1)
+      as id on ift.itemid = id.itemid
+
+      join dbo.locationdim as ld
+      on ift.locationid = ld.locationid
+
+      join dbo.sublocationdim as sld
+      on ift.sublocationid = sld.sublocationid  
+      where
+   
+      (ld.sourcesystem != 'NetSuite'
+
+      or coalesce(ld.formattedlocationname,ld.locationname) in
+
+      ('Old Grove'
+      ,'Trade Place'
+      ,'Formulated Solutions'
+      ,'Kingman Industries'
+      ,'LaDove'
+      ,'PackagingOnDemand'
+      ,'Rapide'
+      ,'Walmart.com'
+      ,'Walmart.com : Walmart.com : CA'
+      ,'Walmart.com : Walmart.com : US'
+      ,'Bright Innovation Labs'
+      ,'Diamond Wipes'
+      ,'Aerochim SAS'
+      , 'Great Northern'
+      , 'Interspray SAS'
+      , 'JP Packaging'
+      , 'Merit'
+      )
+      or
+      ld.locationname in
+      ('TORV'
+      ,'TORR'
+      )
+      )
+       AND ld.locationname ='Texas'
+      group by id.sku,
+      id.itemname ,
+      case
+      when ld.locationname = 'TORR' then 'Maersk TOR Retail'
+      when ld.locationname = 'TORV' then 'Walmart - CA'
+      else
+      iif(ssd.sourcesystemname = 'NPF','NPF',coalesce(ld.formattedlocationname, ld.locationname))
+      end,
+ssd.sourcesystemname
